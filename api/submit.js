@@ -3,7 +3,7 @@
 const { Blob } = require('buffer');
 const Busboy = require('busboy');
 const { put } = require('@vercel/blob');
-const { createClient } = require('@vercel/kv');
+const { writeWork, getBlobToken } = require('./_lib');
 
 // Helper to parse multipart/form-data in Vercel serverless
 function parseMultipart(req) {
@@ -46,13 +46,17 @@ module.exports = async (req, res) => {
 
     // Upload file to Vercel Blob
     const blobName = `${Date.now()}-${fileInfo.filename}`;
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      res.status(500).json({ error: 'Storage is not configured. Please add Vercel Blob and set BLOB_READ_WRITE_TOKEN.' });
+      return;
+    }
     const { url } = await put(blobName, new Blob([fileInfo.buffer]), {
       contentType: fileInfo.mimeType,
-      access: 'public'
+      access: 'public',
+      token
     });
 
-    // Save metadata to KV
-    const kv = createClient();
     const id = Date.now();
     const work = {
       id,
@@ -63,7 +67,8 @@ module.exports = async (req, res) => {
       submittedAt: new Date().toISOString(),
       views: 0
     };
-    await kv.rpush('works', JSON.stringify(work));
+    // Persist metadata as JSON blob
+    await writeWork(work);
 
     res.status(200).json({ message: 'Work submitted successfully!', work });
   } catch (err) {

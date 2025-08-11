@@ -3,7 +3,7 @@
 const { Blob } = require('buffer');
 const Busboy = require('busboy');
 const { put } = require('@vercel/blob');
-const { createClient } = require('@vercel/kv');
+const { writeWork } = require('./_lib');
 const basicAuth = require('basic-auth');
 
 function unauthorized(res) {
@@ -53,7 +53,6 @@ module.exports = async (req, res) => {
 
   try {
     const { fields, fileInfo } = await parseMultipart(req);
-    const kv = createClient();
 
     let imageUrl = fields['image-url'];
     if (fields['image-type'] === 'file') {
@@ -61,10 +60,16 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'File not uploaded.' });
         return;
       }
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      if (!token) {
+        res.status(500).json({ error: 'Storage is not configured. Please add Vercel Blob and set BLOB_READ_WRITE_TOKEN.' });
+        return;
+      }
       const blobName = `${Date.now()}-${fileInfo.filename}`;
       const { url } = await put(blobName, new Blob([fileInfo.buffer]), {
         contentType: fileInfo.mimeType,
-        access: 'public'
+        access: 'public',
+        token
       });
       imageUrl = url;
     }
@@ -81,8 +86,7 @@ module.exports = async (req, res) => {
       imageSource: fields['image-type'] || 'url',
       views: 0
     };
-
-    await kv.rpush('works', JSON.stringify(work));
+    await writeWork(work);
     res.status(200).json({ message: 'Content added successfully!', work });
   } catch (err) {
     console.error(err);

@@ -1,7 +1,7 @@
 'use strict';
 
 const basicAuth = require('basic-auth');
-const { createClient } = require('@vercel/kv');
+const { readWork, deleteWork } = require('../../_lib');
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
@@ -23,15 +23,10 @@ module.exports = async (req, res) => {
   }
   if (!auth(req, res)) return unauthorized(res);
 
-  const kv = createClient();
   const { id } = req.query;
-  const list = await kv.lrange('works', 0, -1);
-  const works = list.map(JSON.parse);
-  const index = works.findIndex(w => String(w.id) === String(id));
-  if (index === -1) return res.status(404).send('Work not found.');
-  works.splice(index, 1);
-  await kv.del('works');
-  if (works.length) await kv.rpush('works', ...works.map(JSON.stringify));
+  const work = await readWork(id);
+  if (!work) return res.status(404).send('Work not found.');
+  await deleteWork(id);
   res.status(200).json({ message: 'Work deleted successfully!' });
 };
 

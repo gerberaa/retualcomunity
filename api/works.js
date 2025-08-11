@@ -1,7 +1,8 @@
 'use strict';
 
 const basicAuth = require('basic-auth');
-const { createClient } = require('@vercel/kv');
+const basicAuth = require('basic-auth');
+const { listWorkBlobs, readWork, writeWork, deleteWork } = require('./_lib');
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
@@ -17,18 +18,26 @@ function auth(req, res) {
 }
 
 module.exports = async (req, res) => {
-  const kv = createClient();
 
   if (req.method === 'GET') {
     if (!auth(req, res)) return unauthorized(res);
-    const list = await kv.lrange('works', 0, -1);
-    const works = list.map(JSON.parse).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-    res.status(200).json(works);
+    try {
+      const blobs = await listWorkBlobs();
+      const items = await Promise.all(blobs.map(b => readWork(b.pathname.replace(/^.*\//, '').replace(/\.json$/, ''))));
+      const works = (items.filter(Boolean)).sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      res.status(200).json(works);
+    } catch (e) {
+      if (e && e.code === 'NO_BLOB_TOKEN') {
+        res.status(200).json([]);
+        return;
+      }
+      console.error(e);
+      res.status(500).send('Failed to list works');
+    }
     return;
   }
 
   if (req.method === 'POST') {
-    // Update status: expects /api/works?id=... and body { status }
     if (!auth(req, res)) return unauthorized(res);
     const { id } = req.query;
     let { status } = req.body || {};
@@ -36,28 +45,31 @@ module.exports = async (req, res) => {
       res.status(400).send('Invalid request');
       return;
     }
-    const list = await kv.lrange('works', 0, -1);
-    const works = list.map(JSON.parse);
-    const index = works.findIndex(w => String(w.id) === String(id));
-    if (index === -1) return res.status(404).send('Work not found.');
-    works[index].status = status;
-    await kv.del('works');
-    if (works.length) await kv.rpush('works', ...works.map(JSON.stringify));
-    res.status(200).json(works[index]);
+    try {
+      const work = await readWork(id);
+      if (!work) return res.status(404).send('Work not found.');
+      work.status = status;
+      await writeWork(work);
+      res.status(200).json(work);
+    } catch (e) {
+      console.error(e);
+      res.status(500).send('Failed to update work');
+    }
     return;
   }
 
   if (req.method === 'DELETE') {
     if (!auth(req, res)) return unauthorized(res);
     const { id } = req.query;
-    const list = await kv.lrange('works', 0, -1);
-    const works = list.map(JSON.parse);
-    const index = works.findIndex(w => String(w.id) === String(id));
-    if (index === -1) return res.status(404).send('Work not found.');
-    works.splice(index, 1);
-    await kv.del('works');
-    if (works.length) await kv.rpush('works', ...works.map(JSON.stringify));
-    res.status(200).json({ message: 'Work deleted successfully!' });
+    try {
+      const work = await readWork(id);
+      if (!work) return res.status(404).send('Work not found.');
+      await deleteWork(id);
+      res.status(200).json({ message: 'Work deleted successfully!' });
+    } catch (e) {
+      console.error(e);
+      res.status(500).send('Failed to delete work');
+    }
     return;
   }
 
