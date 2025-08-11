@@ -327,9 +327,21 @@ let galleryState = {
 
 async function createGalleryContent() {
     try {
-        const response = await fetch('gallery-data.json');
-        if (!response.ok) throw new Error('Could not load gallery data.');
-        const data = await response.json();
+        // Prefer server data if available (Vercel KV), fallback to local JSON
+        let data = [];
+        try {
+            const apiResp = await fetch('/api/works-public');
+            if (apiResp.ok) {
+                data = await apiResp.json();
+            }
+        } catch (e) {
+            // ignore, fallback to local
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+            const response = await fetch('gallery-data.json');
+            if (!response.ok) throw new Error('Could not load gallery data.');
+            data = await response.json();
+        }
 
         galleryState.data = data.filter(item => item.status === 'approved');
         galleryState.filteredData = [...galleryState.data];
