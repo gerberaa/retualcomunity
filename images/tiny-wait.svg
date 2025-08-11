@@ -1,0 +1,7 @@
+<svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+  <!-- Wait cursor -->
+  <circle cx="6" cy="6" r="5" fill="none" stroke="#00ff00" stroke-width="1"/>
+  <circle cx="6" cy="6" r="3" fill="none" stroke="#00ff00" stroke-width="1" stroke-dasharray="2,2"/>
+  <!-- Hourglass -->
+  <path d="M4 2 L8 2 L6 4 L8 6 L4 6 L6 4 Z" fill="#00ff00"/>
+</svg> 

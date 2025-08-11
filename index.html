@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ritual OS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Top Menu Bar -->
+    <div class="menu-bar">
+        <div class="apple-logo">
+            <img src="images/logo.png" alt="Logo" class="custom-logo">
+        </div>
+        <div class="menu-items">
+            
+        </div>
+    </div>
+
+    <!-- Desktop Icons -->
+    <div class="desktop">
+        <div class="desktop-icon" data-app-id="documentation">
+            <img src="images/документація.png" alt="Documentation" class="desktop-icon-img">
+            <span>Documentation</span>
+        </div>
+        <div class="desktop-icon" data-app-id="pinned">
+            <img src="images/закріп.png" alt="Pinned" class="desktop-icon-img">
+            <span>Pinned</span>
+        </div>
+        <div class="desktop-icon" data-app-id="book">
+            <img src="images/книга з контентом.png" alt="Content Book" class="desktop-icon-img">
+            <span>Official Website</span>
+        </div>
+        <div class="desktop-icon" data-app-id="game">
+            <img src="images/Спрайт-0001.png" alt="Game" class="desktop-icon-img">
+            <span>Game</span>
+        </div>
+        <div class="desktop-icon" data-app-id="gallery">
+            <img src="images/книга з контентом.png" alt="Gallery" class="desktop-icon-img">
+            <span>Gallery</span>
+        </div>
+        <div class="desktop-icon" id="submit-work-btn">
+            <img src="images/закріп.png" alt="Submit Work" class="desktop-icon-img">
+            <span>Submit Work</span>
+        </div>
+        
+        <!-- Selection Box -->
+        <div id="selection-box" class="selection-box"></div>
+    </div>
+
+    <!-- Dock -->
+    <div class="dock">
+        <div class="dock-container">
+            <div class="dock-item" data-app-id="documentation">
+                <img src="images/документація.png" alt="Documentation" class="dock-icon" id="dock-icon-documentation">
+                <span class="tooltip">Documentation</span>
+            </div>
+            <div class="dock-item" data-app-id="pinned">
+                <img src="images/закріп.png" alt="Pinned" class="dock-icon" id="dock-icon-pinned">
+                <span class="tooltip">Pinned</span>
+            </div>
+            <div class="dock-item" data-app-id="book">
+                <img src="images/книга з контентом.png" alt="Official Website" class="dock-icon" id="dock-icon-book">
+                <span class="tooltip">Official Website</span>
+            </div>
+            <div class="dock-item" data-app-id="game">
+                <img src="images/Спрайт-0001.png" alt="Game" class="dock-icon" id="dock-icon-game">
+                <span class="tooltip">Game</span>
+            </div>
+            <div class="dock-item" data-app-id="gallery">
+                <img src="images/книга з контентом.png" alt="Gallery" class="dock-icon" id="dock-icon-gallery">
+                <span class="tooltip">Gallery</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widgets -->
+    <div class="widgets">
+        <div class="widget time-widget">
+            <div class="time">12:00</div>
+            <div class="date">Monday, July 28</div>
+        </div>
+        <div class="widget weather-widget">
+            <i class="fas fa-sun"></i>
+            <div class="temp">24°C</div>
+            <div class="location">Kyiv</div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" data-url="https://x.com/robos1230x">
+            <i class="fab fa-twitter"></i>
+            <span>Twitter(Sol0mkaa_) </span>
+        </div>
+        <div class="context-menu-item" data-url="https://x.com/Ma1lse_">
+            <i class="fab fa-twitter"></i>
+            <span>Twitter(Ma1lse_) </span>
+        </div>
+    </div>
+
+    <!-- Cursor Selector -->
+    <div id="cursor-selector" class="cursor-selector">
+        <h3>Cursor</h3>
+        <div class="cursor-options">
+            <div class="cursor-option active" data-cursor="default">Default</div>
+            <div class="cursor-option" data-cursor="pointer">Pointer</div>
+            <div class="cursor-option" data-cursor="crosshair">Crosshair</div>
+            <div class="cursor-option" data-cursor="text">Text</div>
+            <div class="cursor-option" data-cursor="wait">Wait</div>
+            <div class="cursor-option" data-cursor="move">Move</div>
+            <div class="cursor-option" data-cursor="zoom-in">Zoom In</div>
+            <div class="cursor-option" data-cursor="zoom-out">Zoom Out</div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/dock.js"></script>
+    <script src="js/wallpaper.js"></script>
+    <script src="js/context-menu.js"></script>
+    <script src="js/selection.js"></script>
+    <script src="js/cursor-manager.js"></script>
+    <script src="js/iframe-browser.js"></script>
+
+    <script src="js/submission.js"></script>
+
+    <!-- Submission Modal -->
+    <div id="submission-modal" class="modal">
+        <div class="modal-content">
+            <div class="window-header">
+                <div class="window-title">Submit Work</div>
+                <div class="window-controls">
+                    <button class="window-close"></button>
+                    <button class="window-minimize"></button>
+                    <button class="window-maximize"></button>
+                </div>
+            </div>
+            <div class="window-content">
+                <form id="submission-form">
+                    <h2>Submit Work for Moderation</h2>
+                    <p>Upload your image and add a description.</p>
+                    <input type="text" id="submission-title" placeholder="Work Title" required>
+                    <textarea id="submission-description" placeholder="Short Description" rows="4"></textarea>
+                    <input type="file" id="submission-file" accept="image/*" required>
+                    <button type="submit" id="submit-form-btn">Submit</button>
+                    <div id="submission-status"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
