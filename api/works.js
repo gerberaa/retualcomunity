@@ -1,7 +1,6 @@
 'use strict';
 
 const basicAuth = require('basic-auth');
-const basicAuth = require('basic-auth');
 const { query } = require('./_db');
 
 function unauthorized(res) {
