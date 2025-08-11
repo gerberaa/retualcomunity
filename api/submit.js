@@ -3,7 +3,9 @@
 const { Blob } = require('buffer');
 const Busboy = require('busboy');
 const { put } = require('@vercel/blob');
-const { writeWork, getBlobToken } = require('./_lib');
+const { writeWork } = require('./_lib');
+const { uploadImage } = require('./_storage');
+const { migrate, query } = require('./_db');
 
 // Helper to parse multipart/form-data in Vercel serverless
 function parseMultipart(req) {
@@ -46,16 +48,25 @@ module.exports = async (req, res) => {
 
     // Upload file to Vercel Blob
     const blobName = `${Date.now()}-${fileInfo.filename}`;
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) {
-      res.status(500).json({ error: 'Storage is not configured. Please add Vercel Blob and set BLOB_READ_WRITE_TOKEN.' });
-      return;
+    // Prefer Supabase Storage if configured
+    let url;
+    try {
+      url = await uploadImage(fileInfo.buffer, fileInfo.filename, fileInfo.mimeType);
+    } catch (_) {
+      // Fallback to Vercel Blob
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      if (!token) {
+        res.status(500).json({ error: 'Storage is not configured. Add Supabase or set BLOB_READ_WRITE_TOKEN.' });
+        return;
+      }
+      const { put } = require('@vercel/blob');
+      const { url: blobUrl } = await put(blobName, new Blob([fileInfo.buffer]), {
+        contentType: fileInfo.mimeType,
+        access: 'public',
+        token
+      });
+      url = blobUrl;
     }
-    const { url } = await put(blobName, new Blob([fileInfo.buffer]), {
-      contentType: fileInfo.mimeType,
-      access: 'public',
-      token
-    });
 
     const id = Date.now();
     const work = {
@@ -67,8 +78,20 @@ module.exports = async (req, res) => {
       submittedAt: new Date().toISOString(),
       views: 0
     };
-    // Persist metadata as JSON blob
-    await writeWork(work);
+    // Persist metadata in Postgres if available
+    try {
+      await migrate();
+      await query(
+        `insert into public.works (id, title, description, image_url, status, submitted_at, views)
+         values ($1,$2,$3,$4,$5,$6,$7)
+         on conflict (id) do update set
+           title=excluded.title, description=excluded.description, image_url=excluded.image_url, status=excluded.status, submitted_at=excluded.submitted_at`,
+        [work.id, work.title, work.description, work.imageUrl, work.status, work.submittedAt, work.views]
+      );
+    } catch (_) {
+      // Fallback to JSON in Blob
+      await writeWork(work);
+    }
 
     res.status(200).json({ message: 'Work submitted successfully!', work });
   } catch (err) {
