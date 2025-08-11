@@ -120,7 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error(`Server error: ${response.statusText}`);
+                let details = '';
+                try { details = await response.text(); } catch (_) {}
+                throw new Error(`Server error${details ? ': ' + details : ''}`);
             }
 
             const result = await response.json();

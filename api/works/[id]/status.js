@@ -1,7 +1,7 @@
 'use strict';
 
 const basicAuth = require('basic-auth');
-const { readWork, writeWork } = require('../../_lib');
+const { query } = require('../../_db');
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
@@ -30,10 +30,9 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const work = await readWork(id);
-  if (!work) return res.status(404).send('Work not found.');
-  work.status = status;
-  await writeWork(work);
-  res.status(200).json(work);
+  const { rows } = await query(`update public.works set status=$1 where id=$2 returning *`, [status, id]);
+  if (!rows.length) return res.status(404).send('Work not found.');
+  const r = rows[0];
+  res.status(200).json({ id: Number(r.id), title: r.title, description: r.description, imageUrl: r.image_url, status: r.status, submittedAt: r.submitted_at, addedBy: r.added_by, imageSource: r.image_source, views: r.views ?? 0 });
 };
 

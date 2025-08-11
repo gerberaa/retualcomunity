@@ -1,7 +1,7 @@
 'use strict';
 
 const basicAuth = require('basic-auth');
-const { readWork, deleteWork } = require('../../_lib');
+const { query } = require('../../_db');
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Admin Panel"');
@@ -24,9 +24,8 @@ module.exports = async (req, res) => {
   if (!auth(req, res)) return unauthorized(res);
 
   const { id } = req.query;
-  const work = await readWork(id);
-  if (!work) return res.status(404).send('Work not found.');
-  await deleteWork(id);
+  const { rowCount } = await query(`delete from public.works where id=$1`, [id]);
+  if (!rowCount) return res.status(404).send('Work not found.');
   res.status(200).json({ message: 'Work deleted successfully!' });
 };
 

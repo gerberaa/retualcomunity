@@ -1,9 +1,6 @@
 'use strict';
 
-const { Blob } = require('buffer');
 const Busboy = require('busboy');
-const { put } = require('@vercel/blob');
-const { writeWork } = require('./_lib');
 const { uploadImage } = require('./_storage');
 const { migrate, query } = require('./_db');
 const basicAuth = require('basic-auth');
@@ -62,24 +59,8 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'File not uploaded.' });
         return;
       }
-      // Prefer Supabase Storage if configured, fallback to Blob
-      try {
-        imageUrl = await uploadImage(fileInfo.buffer, fileInfo.filename, fileInfo.mimeType);
-      } catch (_) {
-        const token = process.env.BLOB_READ_WRITE_TOKEN;
-        if (!token) {
-          res.status(500).json({ error: 'Storage is not configured. Add Supabase or set BLOB_READ_WRITE_TOKEN.' });
-          return;
-        }
-        const { put } = require('@vercel/blob');
-        const blobName = `${Date.now()}-${fileInfo.filename}`;
-        const { url } = await put(blobName, new Blob([fileInfo.buffer]), {
-          contentType: fileInfo.mimeType,
-          access: 'public',
-          token
-        });
-        imageUrl = url;
-      }
+      // Supabase Storage only
+      imageUrl = await uploadImage(fileInfo.buffer, fileInfo.filename, fileInfo.mimeType);
     }
 
     const id = Date.now();
@@ -94,19 +75,15 @@ module.exports = async (req, res) => {
       imageSource: fields['image-type'] || 'url',
       views: 0
     };
-    // Save metadata to Postgres if available
-    try {
-      await migrate();
-      await query(
-        `insert into public.works (id, title, description, image_url, status, submitted_at, added_by, image_source, views)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-         on conflict (id) do update set
-           title=excluded.title, description=excluded.description, image_url=excluded.image_url, status=excluded.status, submitted_at=excluded.submitted_at, added_by=excluded.added_by, image_source=excluded.image_source`,
-        [work.id, work.title, work.description, work.imageUrl, work.status, work.submittedAt, work.addedBy, work.imageSource, work.views]
-      );
-    } catch (_) {
-      await writeWork(work);
-    }
+    // Save metadata to Postgres only
+    await migrate();
+    await query(
+      `insert into public.works (id, title, description, image_url, status, submitted_at, added_by, image_source, views)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       on conflict (id) do update set
+         title=excluded.title, description=excluded.description, image_url=excluded.image_url, status=excluded.status, submitted_at=excluded.submitted_at, added_by=excluded.added_by, image_source=excluded.image_source`,
+      [work.id, work.title, work.description, work.imageUrl, work.status, work.submittedAt, work.addedBy, work.imageSource, work.views]
+    );
     res.status(200).json({ message: 'Content added successfully!', work });
   } catch (err) {
     console.error(err);
