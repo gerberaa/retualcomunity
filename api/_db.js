@@ -3,7 +3,7 @@
 const { Pool } = require('pg');
 
 // Prefer pooled URL for Vercel/Supabase; fallback to non-pooled
-const connectionString = process.env.POSTGRES_PRISMA_URL
+let connectionString = process.env.POSTGRES_PRISMA_URL
   || process.env.POSTGRES_URL
   || process.env.POSTGRES_URL_NON_POOLING;
 
@@ -11,12 +11,20 @@ if (!connectionString) {
   console.warn('[DB] No Postgres connection string found in env');
 }
 
-// Supabase requires SSL. Some environments need an explicit CA chain.
-// Use relaxed SSL by default; allow override via env.
-const ssl = process.env.PGSSL_DISABLE === '1' ? false : { rejectUnauthorized: false };
+// Force sslmode=no-verify to bypass self-signed chain in serverless
+function forceNoVerify(url) {
+  if (!url) return url;
+  if (url.includes('sslmode=')) {
+    return url.replace(/sslmode=([^&]+)/, 'sslmode=no-verify');
+  }
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 'sslmode=no-verify';
+}
+
+connectionString = forceNoVerify(connectionString);
 
 const pool = connectionString
-  ? new Pool({ connectionString, ssl })
+  ? new Pool({ connectionString })
   : null;
 
 async function migrate() {
