@@ -14,7 +14,11 @@ function requireBlobToken() {
 }
 
 function getBlobToken() {
-  return process.env.BLOB_READ_WRITE_TOKEN;
+  if (process.env.BLOB_READ_WRITE_TOKEN) return process.env.BLOB_READ_WRITE_TOKEN;
+  // Fallback: Vercel may create suffixed env vars per store
+  const key = Object.keys(process.env).find(k => k.startsWith('BLOB_READ_WRITE_TOKEN'));
+  if (key) return process.env[key];
+  return undefined;
 }
 
 function workPath(id) {

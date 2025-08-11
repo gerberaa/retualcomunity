@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
       .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
     res.status(200).json(works);
   } catch (e) {
-    if (e && e.code === 'NO_BLOB_TOKEN') {
+    if (e && (e.code === 'NO_BLOB_TOKEN' || String(e.message || '').includes('Access denied'))) {
       res.status(200).json([]);
       return;
     }
